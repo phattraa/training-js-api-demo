@@ -1,22 +1,20 @@
-name: Javascript CI
+name: javacript ci
 on: [push, pull_request]
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source code
+      - name: Checkout sosurce code
         uses: actions/checkout@v7.0.0
         with:
           repository: ${{ github.repository }}
-
-      - name: Set up Node.js
+      - name: Setup Node.js environment
         uses: actions/setup-node@v6.4.0
-        with:
-          node-version: 22
-
-      - name: Build project
+ 
+      - name: build project
         run: |
           npm ci
           npm run build --if-present
+      - name: run tests project
+        run: |
           npm test
