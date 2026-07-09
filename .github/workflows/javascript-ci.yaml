@@ -12,9 +12,11 @@ jobs:
 
       - name: Set up Node.js
         uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 22
 
       - name: Build project
         run: |
-          npm clean-install
+          npm ci
           npm run build --if-present
           npm test
