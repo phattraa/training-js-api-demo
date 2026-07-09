@@ -1,254 +1,132 @@
-# GitHub Actions & Docker Fundamentals
+# 01_02 Set Up CI for Javascript
 
-## Create Your First GitHub Actions Workflow
+In this lesson, you’ll set up a Continuous Integration workflow for a JavaScript project using GitHub Actions. The code used here is included in the exercise files, so you can jump straight into working with the workflow.
 
-**Objective:** Understand the YAML file structure, core components of GitHub Actions (Triggers, Jobs, Steps, Runners), and the workflow execution environment.
+You’ll start by adding the project code to your repository and selecting a **Node.js Continuous Integration** starter workflow. GitHub’s starter workflows provide a ready-to-use setup that checks out your code, configures Node.js, and runs build and test steps using **npm**.
 
-* **Step-by-Step Demo Guide:**
-1. Create a new repository on GitHub.
-1. Create a folder named `.github/workflows/` and inside it, create a file named `hello-world.yml`.
-1. Define the workflow trigger using `on: push`.
-1. Set up the job to run on a hosted runner: `runs-on: ubuntu-latest`.
-1. Write a simple step to output text using a standard shell:
+The Node.js starter workflow also includes a **matrix strategy**, which automatically runs the same workflow across multiple versions of Node.js. This makes it easy to validate your project against more than one runtime without duplicating configuration.
 
-    ```yaml
-    name: Hello Workflow
-    on: push
-    jobs:
-        hello-job:
-            runs-on: ubuntu-latest
-            steps:
-                - name: Run a one-line script
-                  run: echo "Hello, GitHub Actions!"
-    ```
+Before moving on, you’ll review the Node.js versions defined in the matrix. Because Node releases include both long-term support and short-term versions, it’s important to keep only the versions that make sense for your project. Updating the matrix helps keep your CI workflow reliable and easier to maintain over time.
 
-1. Commit and `git push` the changes to GitHub. Guide students to the **Actions Tab** in the repository to observe the execution logs and step breakdown.
+## What You’ll Do
 
-1. Add **github** and **runner** variable
-    ```yaml
-    steps:
-      # Display the event that triggered the workflow
-      - run: echo "The job was triggered by a ${{ github.event_name }} event."
-      
-      # Runner information
-      - run: echo "This job is now running on a ${{ runner.os }} server hosted by GitHub"
-      
-      # Information about the repository and branch
-      - run: echo "The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-    ```
+In this lesson, you will:
 
-1. Add more job
-    ```yaml
-    Second-Job:
-        name: The second job running on another runner
-        runs-on: windows-latest
-        needs: Example-Actions-Job
-        steps:
-          - run: echo "This job is now running on a ${{ runner.os }} server hosted by GitHub."
-    ```
+- Add a JavaScript project to a GitHub repository
+- Enable a Node.js Continuous Integration starter workflow
+- Review the workflow’s build and test steps
+- Update the Node.js version matrix to use supported versions
+- Run the CI workflow automatically on pushes and pull requests
 
-### Trigers and Events filtering
-1. Update triggers to accept push and pull request events
-    ```yaml
-    on: [push, pull_request]
-    ```
-1. Specific branch
-    ```yaml
-    on:
-        push:
-            branches: [ main ]
-        pull_request:
-            branches: [ main ]
-    ```
+## References
 
-1. Accept triggers from third-party
-    ```yaml
-    on:
-        repository_dispatch:
-            types: [after_render_cms]
-    ```
-1. Display payload data from third-party request
-    ```yaml
-      - run: echo "Payload field is ${{ github.event.client_payload.mydata }}" 
-    ```
+| Reference | Description |
+|----------|-------------|
+| [Node.js Supported Versions](https://github.com/nodejs/Release) | Official Node.js release schedule and supported versions |
+| [actions/setup-node on GitHub Marketplace](https://github.com/marketplace/actions/setup-node-js-environment) | GitHub Action for setting up Node.js environments |
+| [actions/checkout on GitHub Marketplace](https://github.com/marketplace/actions/checkout) | GitHub Action for checking out repository code |
+| [Documentation for the Node.js project used for this lesson](./JS_PROJECT_DETAILS.md) | Documentation for the JavaScript project used in this lesson |
+| [The updated workflow for this lesson](./js-ci-workflow.yml) | The complete workflow file for this lesson |
 
-1. Send Request to triiger workflow
-    * Generate Personal Access Token: Goto **Profile** > **Settings** > **Developer Settings** > **Personal Access Tken** > **Generate new Tkoken**
-    * Set name of Token
-    * Choose **fine-grain permission**
-    * Add permission to **Read-Write** Contents,Workflow and Action
-    * Copy Token
-    * Create new request in Postman
-    * Choose **POST** method
-    * Set URL to https://api.github.com/repos/`Username`/`Password`/dispatches
-    * Set authentication , choose `Bearer Toeken` and copy token from previous step
-    * Set `Accept` header to application/vnd.github.v3+json
-    * Set body to
-        ```json
-        {
-            "event_type": "after_render_cms",
-            "client_payload": {
-                "status": "completed"
-            }
-        }
-        ```
+## Lab: Create and Update a Node.js CI Workflow
 
-1. Dump context variawbles
-    ```yaml
-      - name: Dump Full GitHub Context JSON
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-    ```
+In this lab, you’ll create a Continuous Integration (CI) workflow for a JavaScript project using a GitHub Actions starter workflow. You’ll then review and update the workflow to ensure it uses supported Node.js versions and up-to-date actions.
 
-### Expression
+### Prerequisites
 
-1. Add Condition to run script when pull request
-    ```yaml
-    - name: conditional step when event name is pull request
-      if: ${{ github.event_name == 'pull_request' }}
-      run: echo "This event is a pull request"
-    ```
+Before starting this lab, make sure you have:
 
-### Using Environment Variables
-1. Default Environment Variables: https://docs.github.com/en/actions/reference/workflows-and-actions/variables
+- A GitHub account
+- A new GitHub repository
+- The exercise files for this lesson added to the repository
 
-1. Inject the env: block at both the workflow and job levels
-    ```yaml
-    env:
-        APP_NAME: 'Demo Application'
-    ```
+### Instructions
 
-    ```yaml
-    jobs:
-        build:
-            env:
-                PACKAGE_PATH: '.'
-    ```
+#### 1. Open the Actions tab
 
-    ```yaml
-    - name: Deploy
-      uses: Azure/webapps-deploy@v2
-      with:
-        app-name: ${{ env.APP_NAME }}
-        slot-name: '${{ env.SLOT_NAME }}'
-        package: '${{ env.PACKAGE_PATH }}/myapp'
-      env:
-        SLOT_NAME: production
-    ```
-1. reference it
-    ```yaml
-    - run echo "Application name is ${{ env.APP_NAME }}"
-    ```
-### Secrets Management
-1. Navigate to **Settings** > **Secrets and variables** > **Actions**
-1. Create a Repository Secret named **DB_PASSWORD**.
-1. Write a workflow step to consume it
-    ```yaml
-    - run: echo "The password is ${{ secrets.DB_PASSWORD }}"
-    ```
-## Working with source code
-### Checkout source code from repository
-1. Checkout code
-    ```yaml
-    steps
-      - name: Check out repository code
-        uses: actions/checkout@v2
-      
-      - run: echo "The ${{ github.repository }} repository has been cloned to the runner."
-      
-      - run: echo "Your repository has been copied to the path ${{ github.workspace }} on the runner."
-      
-      - run: echo "The workflow is now ready to test your code on the runner."
-    ```
+Start in the repository where you’ve added the exercise files.
 
-1. Access files in source code directory
-    ```yaml
-    - name: List files in the repository
-      run: |
-        ls ${{ github.workspace }}
-    ```
+1. Select the **Actions** tab at the top of the repository.
+2. GitHub will analyze the contents of the repo and suggest workflows based on the project type.
 
+#### 2. Select a Node.js Continuous Integration workflow
 
-## Building Docker Images and Pushing to GitHub Packages (GHCR)
+1. Scroll down to the **Continuous Integration** section.
+2. Locate the **Node.js** workflow.
+3. Select **Configure** to open the workflow editor.
 
-**Objective:** Learn environment variable handling, automated token authentication, and managing Container Images securely.
+#### 3. Review the generated workflow
 
-* **Step-by-Step Demo Guide:**
-1. Create a simple web application (e.g., Node.js or Python) and write a corresponding `Dockerfile`.
-2. Create a new workflow file named `build-push.yml`.
-3. Utilize the official checkout action: `actions/checkout@v4`.
-4. Implement `docker/login-action@v3` to log into the GitHub Container Registry (`ghcr.io`) using the built-in `${{ secrets.GITHUB_TOKEN }}`.
-5. Implement `docker/build-push-action@v5` to build the image and push it to GHCR, tagging it with both `latest` and the unique Git Commit SHA.
-6. Verify the published image by navigating to the **Packages** tab on the GitHub repository UI.
+Before committing the workflow, take a moment to review its main sections:
 
+- **Checkout step**
+  Checks out the repository so the workflow can access the code.
+
+- **Setup Node.js step**
+  Configures Node.js for the version defined by the workflow.
+
+- **Build and test steps**
+  Uses npm commands to install dependencies and run tests.
+
+- **Matrix strategy**
+  Defines multiple Node.js versions so the same workflow runs once per version.
+
+At this point, accept the workflow as-is.
+
+1. Select **Commit changes**.
+2. Confirm the commit.
+
+This commit triggers a workflow run automatically because the workflow listens for pushes to the main branch.
+
+#### 4. View the workflow run
+
+1. Return to the **Actions** tab.
+2. Select the newly created workflow run.
+3. Confirm that the workflow is running or has completed.
+4. Open the workflow run details.
+5. Note the Node.js versions listed in the matrix (for example: 18.x, 20.x, 22.x).
+
+> [!IMPORTANT]
+> The exact versions mentioned in the video and in this document may differ when you take this course.
+> The important takeaway is that Node.js versions change over time. It’s always a good idea to review and update the matrix to match currently supported releases.
+
+#### 5. Edit the workflow file
+
+1. Select the **Workflow file** link.
+2. Select the **pencil icon** to edit the workflow.
+
+#### 6. Update the Node.js versions
+
+1. Remove any unsupported Node.js versions from the matrix (for example, remove `18.x`).
+2. Add newer supported versions (for example, add `24.x` and `25.x`).
+
+This ensures your CI workflow tests the project against versions of Node.js that are actively supported.
+
+#### 7. Update action versions
+
+While editing the workflow, update the action versions to their latest releases:
+
+- Update `actions/checkout` to a newer version
+- Update `actions/setup-node` to a newer version
+
+Keeping actions up to date helps ensure your workflow remains secure, reliable, and compatible over time.
+
+#### 8. Commit the updated workflow
+
+1. Select **Commit changes**.
+2. Confirm the commit.
+
+This triggers a new workflow run using the updated configuration.
+
+### 9. Verify the results
+
+1. Return to the **Actions** tab.
+2. Open the most recent workflow run.
+3. Confirm that all jobs in the matrix complete successfully.
+
+When each job finishes successfully, you can be confident that the project works across all Node.js versions defined in the matrix.
+
+<!-- FooterStart -->
 ---
-
-## AKS Provisioning & Kubernetes Core Concepts
-
-### Provisioning and Connecting to an AKS Cluster via Azure CLI
-
-**Objective:** Provision a production-ready AKS cluster and configure local tools for cluster administration.
-
-* **Step-by-Step Demo Guide:**
-1. Open the Azure Cloud Shell or a local terminal with Azure CLI installed.
-2. Execute commands to create a Resource Group and provision an AKS cluster with Managed Identity enabled:
-```bash
-az group create --name myAKSResourceGroup --location eastus
-az aks create --resource-group myAKSResourceGroup --name myAKSCluster --node-count 2 --generate-ssh-keys
-
-```
-
-
-3. Download the secure cluster access credentials to configure `kubectl`:
-```bash
-az aks get-credentials --resource-group myAKSResourceGroup --name myAKSCluster
-
-```
-
-
-4. Verify the connection and infrastructure readiness by running `kubectl get nodes` and `kubectl cluster-info`.
-
-
-
-### Deploying Your First Application to AKS (Pods, Deployments, Services)
-
-**Objective:** Understand declarative Kubernetes manifests, self-healing application instances, and external networking.
-
-* **Step-by-Step Demo Guide:**
-1. Create a `deployment.yaml` file to pull the image generated in Demo 2, defining `replicas: 3` for high availability.
-2. Create a `service.yaml` file defined as type `LoadBalancer` to expose the application to the internet via a Public IP.
-3. Apply both configurations using `kubectl apply -f deployment.yaml` and `kubectl apply -f service.yaml`.
-4. Monitor pod initialization live using `kubectl get pods -w`.
-5. Execute `kubectl get service` to retrieve the **External IP**, then paste it into a browser to demonstrate automated traffic routing across pods.
-
-
-
----
-
-## Advanced CI/CD Pipeline (GitHub Actions to AKS)
-
-### Secure Automated CD with GitHub Actions and AKS via OIDC
-
-**Objective:** Implement a keyless, passwordless secure deployment pipeline using OpenID Connect (OIDC) and automate application updates.
-
-* **Step-by-Step Demo Guide:**
-1. **Setup Azure OIDC:** Create an Azure Service Principal and configure Federated Credentials mapped directly to your GitHub repository (eliminating long-lived client secrets).
-2. Create a comprehensive CD workflow named `deploy-to-aks.yml`:
-* Authenticate with Azure using `azure/login@v2` powered by OIDC tokens.
-* Set the Kubernetes target context using `azure/aks-set-context@v4`.
-
-
-3. Use the `azure/k8s-deploy@v5` action to dynamically update the manifests with the newly built Image Tag and deploy to AKS.
-4. Make a visible visual change in the web app code, run `git push`, and show the students the end-to-end automated cycle from code commit to an updated production site.
-
-
-
-### Rolling Updates and Disaster Recovery (Rollbacks)
-
-**Objective:** Manage deployment risks, understand zero-downtime updates, and execute instant rollbacks when a faulty version is deployed.
-
-* **Step-by-Step Demo Guide:**
-1. **Rolling Update:** Modify the application to "Version 2" and push it. Show how AKS handles a rolling update by systematically replacing old pods with new ones without taking the app offline via `kubectl rollout status deployment/my-app`.
-2. **Simulate a Failure:** Intentionally introduce a bug into the image (e.g., a missing configuration that crashes the container). Deploy it. Show that the pods enter a `CrashLoopBackOff` state, but the existing web app remains online because Kubernetes halts the bad rollout.
-3. **Rollback:** Trigger an automated rollback via a fallback GitHub Actions workflow (or execute `kubectl rollout undo deployment/my-app` locally) to instantaneously restore the last stable state.
+[← 01_01 Leverage Starter Workflows](../01_01_starter_workflows/README.md) | [01_03 Set Up CI for Python →](../01_03_ci_for_python/README.md)
+<!-- FooterEnd -->
