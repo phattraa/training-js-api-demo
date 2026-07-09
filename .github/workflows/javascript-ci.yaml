@@ -2,19 +2,29 @@ name: javacript ci
 on: [push, pull_request]
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}  #สั่งให้รัน job บน OS ที่กำหนดใน matrix   อย่างเช่นตอนนี้มี 2 OS คือ ubuntu-latest และ windows-latest
+    continue-on-error: true  #สั่งให้ job ไม่ต้องหยุดทำงานเมื่อเกิด error
+    strategy: #สั่ง ให้รัน job ใน matrix ของ node-version 18.x และ 20.x   สามารถเทสได้หลาย version
+      matrix:
+        node-version: [22.x, 26.x]
+        os: [ubuntu-latest, windows-latest]
+        exclude:    #สั่งให้ไม่รต้อง build version 26 ของ windows
+          - os: windows-latest
+            node-version: 26.x
     steps:
-      - name: Checkout sosurce code
+      - name: Checkout sosurce code #สั่งให้ทำการ checkout source code จาก repository
         uses: actions/checkout@v7.0.0
         with:
           repository: ${{ github.repository }}
-      - name: Setup Node.js environment
+      - name: Setup Node.js environment   #สั่งให้ทำการ setup node.js environment
         uses: actions/setup-node@v6.4.0
+        with:
+          node-version: ${{ matrix.node-version }}
  
-      - name: build project
+      - name: build project   #สั่ง ให้ทำการ build project
         run: |
           npm ci
           npm run build --if-present
       - name: run tests project
-        run: |
+        run: |    #สั่ง ให้ทำการ run test project
           npm test
